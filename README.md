@@ -1,4 +1,4 @@
-# BERT Sentiment Analysis on Akash Network
+# BERT Sentiment Analysis on Akash Network with Unreal engine plugin
 
 This repository contains the necessary files to deploy a sentiment analysis model based on the BERT architecture on the Akash Network. The model is capable of classifying text into five sentiment categories: very negative, negative, neutral, positive, and very positive.
 
@@ -8,7 +8,7 @@ The model used is the `nlptown/bert-base-multilingual-uncased-sentiment` model f
 
 ## Files
 
-- `app.py`: This is the main application file. It uses Flask to create a web application that takes user input, passes it to the model, and returns the sentiment prediction.
+- `app.py`: This is the main application file. It uses websocket server to get inputs from the unreal dedicated server.
 - `Dockerfile`: This file contains the instructions to build the Docker image for the application.
 - `requirements.txt`: This file lists the Python libraries required by the application.
 - `deploy.yaml`: This is the SDL (Stack Definition Language) file used for deploying the application on the Akash Network.
@@ -48,23 +48,64 @@ The Sentiment Analysis Plugin for Unreal Engine integrates WebSocket communicati
 
 ### Connecting to WebSocket
 
-To establish a WebSocket connection to the sentiment analysis service, follow these steps:
+Usage
+Create WebSocket
+Use the CreateWebSocket or CreateWebSocketWithHeaders function to create a WebSocket connection.
 
-1. Ensure the plugin is enabled in your Unreal Engine project.
-2. Call the `ConnectWebSocket` function from the `SentimentAnalysisPlugin` category at the appropriate time (e.g., on game start).
+Blueprint Node:
 
-### Sending Messages
+Create WebSocket
+Create WebSocket With Headers
+Send Message
+Use the SendMessage function to send a message through the WebSocket.
 
-To send text messages for sentiment analysis, use the `SendMessage` function from the `SentimentAnalysisPlugin` category. Pass the text message as a parameter to this function.
+*Blueprint Node*:
 
-### Receiving Messages
+Send Message
+Bind to Events
+Bind to the following events to handle WebSocket events:
 
-To receive sentiment analysis results, use the `ReceiveMessage` function from the `SentimentAnalysisPlugin` category. This function returns the last received sentiment analysis result from the WebSocket server.
+1. OnWebSocketConnected
+2. OnWebSocketConnectionError
+3. OnWebSocketClosed
+4. OnWebSocketMessageReceived
+5. OnWebSocketMessageSent
+
+*Example*
+Creating a WebSocket Connection:
+
+```
+UWebSocket* WebSocket = USentimentAnalysisBPLibrary::CreateWebSocket("ws://localhost:8765");
+WebSocket->OnWebSocketConnected.AddDynamic(this, &YourClass::HandleWebSocketConnected);
+WebSocket->OnWebSocketMessageReceived.AddDynamic(this, &YourClass::HandleWebSocketMessageReceived);
+WebSocket->Connect();
+```
+Sending a Message:
+
+```
+if (WebSocket->IsConnected())
+{
+    WebSocket->SendMessage("Hello, WebSocket!");
+}
+```
+Handling Events:
+
+```
+void YourClass::HandleWebSocketConnected()
+{
+    // Handle WebSocket connected event
+}
+
+void YourClass::HandleWebSocketMessageReceived(const FString& Message)
+{
+    // Handle WebSocket message received event
+}
+```
 
 
 ## Contributing
 
-Contributions are welcome! If you encounter any issues or have suggestions for improvements, please [open an issue](https://github.com/your-repo-name/issues).
+Contributions are welcome! If you encounter any issues or have suggestions for improvements, please [open an issue](https://github.com/bert-sentiment-analysis/issues).
 
 ## License
 

@@ -11,27 +11,39 @@ USentimentAnalysisBPLibrary::USentimentAnalysisBPLibrary(const FObjectInitialize
 }
 
 
-void USentimentAnalysisBPLibrary::ConnectWebSocket()
+TSharedPtr<IWebSocket> USentimentAnalysisBPLibrary::WebSocket = nullptr;
+FString USentimentAnalysisBPLibrary::LastSentiment = TEXT("");
+FOnSentimentReceived USentimentAnalysisBPLibrary::OnSentimentReceived;
+
+void USentimentAnalysisBPLibrary::ConnectWebSocket(const FString& Url)
 {
-    if (FSentimentAnalysisModule* Module = FModuleManager::GetModulePtr<FSentimentAnalysisModule>("SentimentAnalysisPlugin"))
+    if (!WebSocketsModule.IsInitialized())
     {
-        Module->ConnectWebSocket();
+        WebSocketsModule.Initialize();
     }
+
+    WebSocket = FWebSocketsModule::Get().CreateWebSocket(Url);
+
+    WebSocket->OnMessage().AddStatic(&USentimentAnalysisBPLibrary::OnMessageReceived);
+
+    WebSocket->Connect();
 }
 
 void USentimentAnalysisBPLibrary::SendMessage(const FString& Message)
 {
-    if (FSentimentAnalysisModule* Module = FModuleManager::GetModulePtr<FSentimentAnalysisModule>("SentimentAnalysisPlugin"))
+    if (WebSocket.IsValid() && WebSocket->IsConnected())
     {
-        Module->EvaluateChatMessage(Message);
+        WebSocket->Send(Message);
     }
 }
 
-void USentimentAnalysisBPLibrary::ReceiveMessage(const FString& Message)
+FString USentimentAnalysisBPLibrary::GetLastSentiment()
 {
-    if (FSentimentAnalysisModule* Module = FModuleManager::GetModulePtr<FSentimentAnalysisModule>("SentimentAnalysisPlugin"))
-    {
-        Module->OnSentimentReceived(Message);
-    }
-    
+    return LastSentiment;
+}
+
+void USentimentAnalysisBPLibrary::OnMessageReceived(const FString& Message)
+{
+    LastSentiment = Message;
+    OnSentimentReceived.Broadcast(LastSentiment);
 }

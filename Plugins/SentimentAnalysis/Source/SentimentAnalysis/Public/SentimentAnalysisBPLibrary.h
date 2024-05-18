@@ -22,18 +22,31 @@
 *	For more info on custom blueprint nodes visit documentation:
 *	https://wiki.unrealengine.com/Custom_Blueprint_Node_Creation
 */
+
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSentimentReceived, const FString&, Sentiment);
+
 UCLASS()
-class USentimentAnalysisBPLibrary : public UBlueprintFunctionLibrary
+class SENTIMENTANALYSIS_API USentimentAnalysisBPLibrary : public UBlueprintFunctionLibrary
 {
-	GENERATED_UCLASS_BODY()
+    GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintCallable, Category = "SentimentAnalysisPlugin")
-		static void ConnectWebSocket();
+    UFUNCTION(BlueprintCallable, Category = "SentimentAnalysis")
+        static void ConnectWebSocket(const FString& Url);
 
-	UFUNCTION(BlueprintCallable, Category = "SentimentAnalysisPlugin")
-		static void SendMessage(const FString& Message);
+    UFUNCTION(BlueprintCallable, Category = "SentimentAnalysis")
+        static void SendMessage(const FString& Message);
 
-	UFUNCTION(BlueprintCallable, Category = "SentimentAnalysisPlugin")
-		static void ReceiveMessage(const FString& Message);
+    UFUNCTION(BlueprintCallable, Category = "SentimentAnalysis")
+        static FString GetLastSentiment();
+
+    UPROPERTY(BlueprintAssignable, Category = "SentimentAnalysis")
+        static FOnSentimentReceived OnSentimentReceived;
+
+private:
+    static TSharedPtr<IWebSocket> WebSocket;
+    static FString LastSentiment;
+
+    static void OnMessageReceived(const FString& Message);
 };

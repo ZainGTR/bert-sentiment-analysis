@@ -1,49 +1,20 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
 #include "SentimentAnalysisBPLibrary.h"
-#include "SentimentAnalysis.h"
+#include "WebSocketsModule.h"
+#include "IWebSocket.h"
+#include "Websocket.h"
 
 
-USentimentAnalysisBPLibrary::USentimentAnalysisBPLibrary(const FObjectInitializer& ObjectInitializer)
-: Super(ObjectInitializer)
+
+
+UWebSocket* USentimentAnalysisBPLibrary::CreateWebSocket(FString ServerUrl, FString ServerProtocol)
 {
-
+    return CreateWebSocketWithHeaders(ServerUrl, {}, ServerProtocol);
 }
 
-
-TSharedPtr<IWebSocket> USentimentAnalysisBPLibrary::WebSocket = nullptr;
-FString USentimentAnalysisBPLibrary::LastSentiment = TEXT("");
-FOnSentimentReceived USentimentAnalysisBPLibrary::OnSentimentReceived;
-
-void USentimentAnalysisBPLibrary::ConnectWebSocket(const FString& Url)
+UWebSocket* USentimentAnalysisBPLibrary::CreateWebSocketWithHeaders(FString ServerUrl, TMap<FString, FString> UpgradeHeaders, FString ServerProtocol /* = TEXT("ws") */)
 {
-    if (!WebSocketsModule.IsInitialized())
-    {
-        WebSocketsModule.Initialize();
-    }
-
-    WebSocket = FWebSocketsModule::Get().CreateWebSocket(Url);
-
-    WebSocket->OnMessage().AddStatic(&USentimentAnalysisBPLibrary::OnMessageReceived);
-
-    WebSocket->Connect();
-}
-
-void USentimentAnalysisBPLibrary::SendMessage(const FString& Message)
-{
-    if (WebSocket.IsValid() && WebSocket->IsConnected())
-    {
-        WebSocket->Send(Message);
-    }
-}
-
-FString USentimentAnalysisBPLibrary::GetLastSentiment()
-{
-    return LastSentiment;
-}
-
-void USentimentAnalysisBPLibrary::OnMessageReceived(const FString& Message)
-{
-    LastSentiment = Message;
-    OnSentimentReceived.Broadcast(LastSentiment);
+    const TSharedPtr<IWebSocket> ActualSocket = FModuleManager::LoadModuleChecked<FWebSocketsModule>(TEXT("WebSockets")).CreateWebSocket(ServerUrl, ServerProtocol, UpgradeHeaders);
+    UWebSocket* const WrapperSocket = NewObject<UWebSocket>();
+    WrapperSocket->InitWebSocket(ActualSocket);
+    return WrapperSocket;
 }
